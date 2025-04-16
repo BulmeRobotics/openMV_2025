@@ -1,7 +1,7 @@
 # modules
 import os
-import tf,
-import uos,
+import tf
+import uos
 import gc
 import sensor
 import time
@@ -46,7 +46,7 @@ await_reset = False
 obj_detected = False  #flag to check if something was detected
 net = None
 labels = None
-min_confidence = 0.7
+min_confidence = 0.85
 
 # config UART interface
 uart = UART(1, 115200, timeout_char=200)
@@ -63,6 +63,7 @@ except Exception as e:
 
 # function to check the reset pin and pause the detection for 3s:
 def check_reset():
+    global await_reset
     if pin_reset.value() == True:
         pin_alert.value(0)
         print("Reset")
@@ -72,9 +73,11 @@ def check_reset():
         counter_red = counter_green = counter_yellow = 0
         counter_harmed = counter_safe = counter_unharmed = 0
         frame_counter = 0
+        transmission_data = ""
 
 # function to check start/end from UART
 def check_start():
+    global run
     data = uart.read()
     if data is not None:
         print(data)
@@ -89,6 +92,8 @@ def check_start():
             uart.write("X")
 
 while True:
+    clock.tick()
+    img = sensor.snapshot()
     # Check start/stop
     check_start()
 
@@ -96,10 +101,7 @@ while True:
     check_reset()
 
     # Run the detection
-    if run and not await_reset:
-        clock.tick()
-        img = sensor.snapshot()
-        
+    if (run == True) and not await_reset:
         # draw grid
         img.draw_line(max_detection_val_right, 0 ,max_detection_val_right, 240 , 255, 1)
         img.draw_line(max_detection_val_left, 0 ,max_detection_val_left, 240 , 255, 1)
@@ -147,9 +149,9 @@ while True:
                     center_y = math.floor(y + (h / 2))
                     img.draw_circle((center_x, center_y, 12), color=(0, 0, 255), thickness=4)
                     img.draw_rectangle(d.rect(), color=(0, 0, 255), thickness=2)
-                    img.draw_string(10, 10, labels[i], color=(0, 0, 255), scale=3)
+                    img.draw_string(10, 10, labels[victim_type], color=(0, 0, 255), scale=3)
                     objposition = center_x
-                    
+
                     if labels[victim_type] == "H":
                         counter_harmed += 1
                     if labels[victim_type] == "U":
