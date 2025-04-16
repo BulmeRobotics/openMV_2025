@@ -68,11 +68,21 @@ def checkRESET():
     global reset_help
 
     if ResetPin.value() == True:
-        print("Reset")
         pin2.value(0)
+        time.sleep(3)
+        print("Reset")
+        stop_reset = False
+
         #,reset_time = time.ticks_ms()
-        reset_help = True
+        #reset_help = True
         
+        
+        
+        
+        
+        
+        
+
 
 
 
@@ -105,22 +115,23 @@ while True:
     while stop == True:
         checkUART()
         time.sleep(0.1)
-        clock.tick()
-        img = sensor.snapshot()
-
+        #clock.tick()
+        #img = sensor.snapshot()
 
     while stop_reset == True:
-        checkRESET()
-        time.sleep(0.1)
-        #print(reset_time)
-        if reset_help == True: 
-            reset_time = time.ticks_ms()
-        if time.ticks_diff(time.ticks_ms(), reset_time) > 3000:
-            stop_reset = False
-            reset_help = False
-        clock.tick()
-        img = sensor.snapshot()
 
+        checkRESET()
+        print(stop_reset)
+        #print(reset_time)
+        #if reset_help == True:
+        #    reset_time = time.ticks_ms()
+        #if time.ticks_diff(time.ticks_ms(), reset_time) > 3000000:
+        #    print("COMPLETE")
+        #    stop_reset = False
+        #    reset_help = False
+        #print("daddy im stuck")
+        time.sleep(0.1)
+        if stop_reset == False: break
 
     clock.tick()
     img = sensor.snapshot()
