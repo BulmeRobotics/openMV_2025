@@ -16,7 +16,7 @@ reset_pin = Pin("P8", Pin.IN)
 #Set Detection Grid
 max_detection_val_right = 250
 max_detection_val_left = 80
-mid_detection_val_up = 60
+mid_detection_val_up = 30                           #Change to Set Top Boarder (Je niedrieger desto höher die Grenze)
 mid_detection_val_down = 240-mid_detection_val_up
 
 #Variables
@@ -35,6 +35,7 @@ labels = None
 data = False
 min_confidence = 0.6
 acknowledged = "X"
+top_boarder_deactivated = True                        #Set to False, when Top Boarder needed
 
 #Colour Thresholds
 thresholds = [
@@ -106,6 +107,8 @@ while True:
         #Drawing detection - grid
         img.draw_line(max_detection_val_right, 0 ,max_detection_val_right, 240 , 255, 1)
         img.draw_line(max_detection_val_left, 0 ,max_detection_val_left, 240 , 255, 1)
+        if top_boarder_deactivated == False:
+            img.draw_line(0, mid_detection_val_up ,240, mid_detection_val_up , 255, 1)
 
         #Start of color detection:
         for i, threshold in enumerate(thresholds):
@@ -115,20 +118,26 @@ while True:
                 area_threshold=200,
                 merge=True,
             ):
-                #Colour Counter increases when detected
-                frame_counter += 1
-                if i == 0:
-                    Counter_Red += 1
-                elif i == 1:
-                    Counter_Green += 1
-                elif i == 2:
-                    Counter_Yellow += 1
 
                 #graphical bounding of the blob
                 [x, y, w, h] = blob.rect()
                 center_x = math.floor(x + (w / 2))
                 center_y = math.floor(y + (h / 2))
                 center_positon_x = center_x
+
+                #Top Border
+                if center_y >= mid_detection_val_up or top_boarder_deactivated == True:
+
+                    #Colour Counter increases when detected
+                    frame_counter += 1
+                    if i == 0:
+                        Counter_Red += 1
+                    elif i == 1:
+                        Counter_Green += 1
+                    elif i == 2:
+                        Counter_Yellow += 1
+
+
                 if blob.elongation() > 0.5:
                     img.draw_edges(blob.min_corners(), color=(255, 0, 0))
                     img.draw_line(blob.major_axis_line(), color=(0, 255, 0))
@@ -155,15 +164,18 @@ while True:
                     img.draw_string(10, 10, labels[i], color=(0, 0, 255), scale=3)
                     center_positon_x = center_x
 
-                    #Letter Counter increases when detected
-                    frame_counter += 1
-                    if labels[i] == "H":
-                        Counter_Harmed += 1
-                        print(Counter_Harmed)
-                    if labels[i] == "U":
-                        Counter_Unharmed += 1
-                    if labels[i] == "S":
-                        Counter_Safe += 1
+                    #Top Border
+                    if center_y >= mid_detection_val_up or top_boarder_deactivated == True:
+
+                        #Letter Counter increases when detected
+                        frame_counter += 1
+                        if labels[i] == "H":
+                            Counter_Harmed += 1
+                            print(Counter_Harmed)
+                        if labels[i] == "U":
+                            Counter_Unharmed += 1
+                        if labels[i] == "S":
+                            Counter_Safe += 1
 
         #Evaluation and Handover of most detected Object
         if (frame_counter >= 5):
