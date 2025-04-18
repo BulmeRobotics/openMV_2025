@@ -34,12 +34,13 @@ net = None
 labels = None
 data = False
 min_confidence = 0.6
+acknowledged = "X"
 
 #Colour Thresholds
 thresholds = [
-    (30, 100, 15, 127, 15, 127),    #generic_red_thresholds
+    (30, 100, 15, 127, 7, 127),    #generic_red_thresholds
     (33, 100, -51, -19, 4, 43),     #generic_green_thresholds
-    (77, 99, -21, -4, 12, 68),      #generic_yellow_thresholds
+    (58, 90, -9, 10, 46, 70),      #generic_yellow_thresholds
 ]
 
 #Camera initialize
@@ -69,9 +70,10 @@ def check_reset():
     global stop_reset
     global reset_time
     global frame_counter
+   # stop_reset = False #######################TESTESTEST############
     if reset_pin.value() == True:
         alert_pin.value(0)
-        time.sleep(2)
+        time.sleep(1.5)
         print("Reset")
         stop_reset = False
         frame_counter = 0
@@ -86,14 +88,10 @@ def check_start():
         if "A" in data:
             print("Start")
             run = True
-            time.sleep(0.05)
-            uart.write("X")
 
         elif "E" in data:
             print("End")
             run = False
-            time.sleep(0.05)
-            uart.write("X")
 
 #Main Loop
 while True:
