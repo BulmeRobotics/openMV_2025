@@ -18,7 +18,7 @@ wall_pin = Pin("P9", Pin.IN) #Pin korrigieren
 max_detection_val_right = 270
 max_detection_val_left = 60
 mid_detection_val_top = 30                           #Change to Set Top Boarder (Je niedrieger desto höher die Grenze)
-mid_detection_val_bottom = 190
+mid_detection_val_bottom = 120
 top_boarder_deactivated = False                      #Set to False, when Horizontal Boarder needed
 if top_boarder_deactivated:
     mid_detection_val_bottom = 255
@@ -53,7 +53,7 @@ thresholds = [
     (51, 79, -12, 5, 43, 70),      #yellow thresholds
 ]
 
-#time.sleep(2)
+time.sleep(3)
 
 #Camera initialize
 sensor.reset()
@@ -146,6 +146,7 @@ def cams_init():
     sensor.set_auto_gain(False)
     sensor.set_auto_whitebal(True)
     run = False
+    #init_done = False
 
 
 #Main Loop
@@ -154,8 +155,8 @@ while True:
     img = sensor.snapshot()
 
     #Cam initialised when Reset Pin high & Init unused
-    if (reset_pin.value() & init_done):
-        cams_init()
+    #if init_done:
+        #cams_init()
 
     #Check Start & Reset Pin
     check_start()
