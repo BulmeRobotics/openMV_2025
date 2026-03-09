@@ -31,7 +31,10 @@ except ImportError as e:
 # --- 2. VARIABLEN (VOM OPENMV CODE) ---
 Counter_Harmed = Counter_Safe = Counter_Unharmed = 0
 frame_counter = 0
-MIN_CONFIDENCE = 0.6 
+MIN_CONFIDENCE = 0.4
+MIN_CONFIDENCE_H = 0.7
+MIN_CONFIDENCE_S = 0.95
+MIN_CONFIDENCE_U = 0.5
 MODEL_PATH = "trained.tflite"
 LABEL_PATH = "labels.txt"
 
@@ -112,25 +115,25 @@ try:
         # --- AUSWERTUNG (DEINE LOGIK) ---
         if found_label:
             frame_counter += 1
-            if found_label == "H": Counter_Harmed += 1
-            elif found_label == "S": Counter_Safe += 1
-            elif found_label == "U": Counter_Unharmed += 1
+            if found_label == "H" and max_score > MIN_CONFIDENCE_H: Counter_Harmed += 1
+            elif found_label == "S" and max_score > MIN_CONFIDENCE_S: Counter_Safe += 1
+            elif found_label == "U" and max_score > MIN_CONFIDENCE_U: Counter_Unharmed += 1
             
             #cv2.putText(frame_display, f"{found_label} ({int(max_score*100)}%)", 
             #            (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
-
+            
         # --- HANDOVER ---
         if frame_counter >= 5:
             counts = {'H': Counter_Harmed, 'S': Counter_Safe, 'U': Counter_Unharmed}
             CamTransmit = max(counts, key=counts.get)
             print(f">>> ÜBERTRAGUNG: {CamTransmit} <<<")
             print(f">>> Confidence: {max_score} <<<")
-            # Reset
+            
             Counter_Harmed = Counter_Safe = Counter_Unharmed = 0
             frame_counter = 0
             #time.sleep(0.5)
 
-        cv2.imshow('Pi 5 FOMO Detection', frame_display)
+        cv2.imshow('Camera Detection', frame_rgb)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
