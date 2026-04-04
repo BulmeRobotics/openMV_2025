@@ -17,7 +17,7 @@ MODEL_PATH = "trained.tflite"
 LABEL_PATH = "labels.txt"
 MIN_BLOB_AREA = 500  # Mindestgröße in Pixeln, damit es als "Blob" zählt
 COM_PORT = '/dev/ttyAMA0'        
-BAUD_RATE = 9600 
+BAUD_RATE = 115200 
 uart_aktiv = True
 alert_pin = DigitalOutputDevice(17)     #Ändern auf jeweiligen IO Pin
 initDone = False
@@ -26,6 +26,7 @@ initError = False
 found_label =""
 found_color = ""
 RunErkennung = False
+
 try:
     import imp
 except ImportError:
@@ -56,15 +57,6 @@ if uart_aktiv == True:
     except Exception as e:
         exit()
 
-
-
-
-color_ranges = {
-    "ROT":  [(np.array([70, 70, 70]), np.array([135,255,255]))],
-    "GELB": [(np.array([20, 100, 100]), np.array([35, 255, 255]))], #oaschlecken
-    "GRUEN": [(np.array([35, 50, 50]), np.array([90, 255, 255]))]
-}
-
 def load_labels(path):
     if os.path.exists(path):
         with open(path, 'r') as f:
@@ -94,29 +86,6 @@ def AiAusführung():
     output_data = interpreter.get_tensor(output_details[0]['index'])[0]
     grid_h, grid_w, num_classes = output_data.shape
 
-# --- NEU: FARBERKENNUNG FUNKTION ---
-def Farberkennung(img_bgr):
-    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    found_colors = []
-
-    for color_name, ranges in color_ranges.items():
-        mask = None
-        for (lower, upper) in ranges:
-            target_mask = cv2.inRange(hsv, lower, upper)
-            mask = target_mask if mask is None else cv2.bitwise_or(mask, target_mask)
-        
-        # Blobs finden
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in contours:
-            area = cv2.contourArea(cnt)
-            if area > MIN_BLOB_AREA:
-                x, y, w, h = cv2.boundingRect(cnt)
-                cv2.rectangle(frame_display, (x, y), (x + w, y + h), (255, 255, 255), 2)
-                cv2.putText(frame_display, color_name, (x, y - 10), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                found_colors.append(color_name)
-    return found_colors
-
 def SerialWrite(obj):
     
     message = b"{obj}"
@@ -128,15 +97,6 @@ def SerialRecieve():
     if ser.in_waiting > 0:
         recieved = ser.read().decode('utf-8', errors = 'ignore')
         return recieved
-            
-
-def SerialInit():
-    if SerialRecieve() == "I":
-        SerialWrite("OK")
-        initDone = True
-        return initDone
-    else:
-        return initError
 
 # TFLite Initialisierung
 LABELS = load_labels(LABEL_PATH)
@@ -154,24 +114,14 @@ config = picam2.create_preview_configuration(main={"format": "RGB888", "size": (
 picam2.configure(config)
 picam2.start()
 
-try:
-
-    #if SerialInit() == initDone:
-    #    CamStart = True
-    #elif SerialInit() == initError:
-    #    CamStart = False
-
-
-    cmd = SerialRecieve()
-    print(f">>> Startschuss: {cmd}<<<")
-
+try: 
     while CamStart:
         cmd = SerialRecieve()
         if cmd == "E" or RunErkennung:
             RunErkennung = True
-            print(f">>> Schwanz: {cmd}<<<")
+            print(f">>> Startschuss erhalten: {cmd}<<<")
             frame_rgb = picam2.capture_array()
-            CamVorverarbeitung() # Erzeugt frame_display (BGR)
+            CamVorverarbeitung()
             AiAusführung()
           
             found_label = None
@@ -193,7 +143,6 @@ try:
                             pos_y = int((y + 0.5) * (im_h / grid_h))
                             cv2.circle(frame_display, (pos_x, pos_y), 10, (0, 255, 0), -1)
 
-
             if found_label:
                 frame_counter += 1
                 if found_label == "H" and max_score > MIN_CONFIDENCE_H: Counter_Harmed += 1
@@ -213,9 +162,6 @@ try:
             cv2.imshow('Camera Detection', frame_display)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        
-
-
 finally:
     picam2.stop()
     cv2.destroyAllWindows()
