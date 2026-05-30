@@ -37,7 +37,7 @@ except ImportError:
 MODEL_PATH = "trained.tflite"
 LABEL_PATH = "labels.txt"
 MIN_CONFIDENCE = 0.4
-SERIAL_PORT = '/dev/ttyACM0'  # Ggf. anpassen auf /dev/ttyUSB0
+SERIAL_PORT = '/dev/ttyAMA0'  # Ggf. anpassen auf /dev/ttyUSB0
 BAUD_RATE = 115200
 TRIGGER_PIN = 17              # Gemeinsamer Pin für beide Kameras
 
@@ -243,8 +243,18 @@ class CameraAIThread(threading.Thread):
             detected_frame_label = None
 
             # --- ERKENNUNG 1: TFLite Buchstaben ---
-            prep_img = cv2.resize(frame_rgb, (self.ki_w, self.ki_h))
-            input_data = np.expand_dims(prep_img, axis=0)
+            
+            # 1. Bild für das KI-Modell in Graustufen umwandeln (1 Farbkanal)
+            gray_frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2GRAY)
+            
+            # 2. Skalieren auf die erwartete KI-Eingangsgröße
+            prep_img = cv2.resize(gray_frame, (self.ki_w, self.ki_h))
+            
+            # 3. Dimensionen anpassen: Von (H, W) zu (H, W, 1) und dann zu (Batch=1, H, W, 1)
+            prep_img = np.expand_dims(prep_img, axis=-1)  # Fügt den fehlenden Farbkanal (1) hinzu
+            input_data = np.expand_dims(prep_img, axis=0) # Fügt die Batch-Dimension (1) hinzu
+            
+            # 4. Typisierung für int8 / float32
             if self.is_int8:
                 input_data = (input_data.astype(np.float32) - 128).astype(np.int8)
             else:
@@ -350,17 +360,21 @@ try:
                         SerialWrite("OK")
                     
                     # AKTIVIERUNG BOTH CAMERAS / REAKTIVIEREN
-                    elif cmd == "LE":
+                    elif cmd == "E":
                         cam_left.enabled = True
+                        cam_right.enabled = True
                         SerialWrite("OK")
+                        
                     elif cmd == "RE":
                         cam_right.enabled = True
                         SerialWrite("OK")
                     
                     # DEAKTIVIERUNG / IDLE
-                    elif cmd == "LD":
+                    elif cmd == "D":
                         cam_left.enabled = False
                         cam_left.reset_logic()
+                        cam_right.enabled = False
+                        cam_right.reset_logic()
                         SerialWrite("OK")
                     elif cmd == "RD":
                         cam_right.enabled = False
